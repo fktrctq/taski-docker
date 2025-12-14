@@ -33,6 +33,10 @@ services:
   frontend: # Имя третьего контейнера. Это контейнер с фронтендом
     env_file: .env
     build: ./frontend/
+    command: cp -r /app/build/. /frontend_static/
+    volumes:
+      - static:/frontend_static
+    
 
   gateway:
     # Сбилдить и запустить образ, 
