@@ -235,3 +235,55 @@ Dockerfile для образа nginx будет очень коротким:
 FROM nginx:1.22.1
 COPY nginx.conf /etc/nginx/templates/default.conf.template 
 Именно так в документации и рекомендовано добавлять файл конфигурации в образ nginx.
+
+Когда Nginx из своего контейнера обращается к другому контейнеру, он использует имя контейнера в качестве доменного имени. 
+Так, к контейнеру backend Nginx обращается по адресу http://backend:8000. 
+Из-за этого Django-проект будет считать, что запрос отправлен не на http://localhost:8000, 
+как указано в адресной строке браузера, а на http://backend:8000. 
+Это может привести к неправильному формированию ссылок. 
+Чтобы избежать этой проблемы, добавь инструкцию замены заголовка Host в nginx.conf.
+
+
+подключение volume backend: # Имя и описание контейнера с бэкендом
+
+    backend: # Имя и описание контейнера с бэкендом
+    env_file: .env
+    build: ./backend/  # Из какого Dockerfile собирать образ для этого контейнера:
+    volumes:
+      - static:/backend_static
+    depends_on: # Какие контейнеры нужно запустить до старта этого контейнера:
+      db: 
+        condition: service_healthy  # проверка здоровья контейнера с БД
+  
+  frontend: # Имя третьего контейнера. Это контейнер с фронтендом
+    env_file: .env
+    build: ./frontend/
+
+  gateway:
+    # Сбилдить и запустить образ, 
+    # описанный в Dockerfile в папке gateway
+    build: ./gateway/
+    # Ключ ports устанавливает
+    # перенаправление всех запросов с порта 8000 хоста
+    # на порт 80 контейнера
+    ports:
+      - 8000:80 
+    volumes:
+      - static:/staticfiles
+    
+Перезапустите Docker Compose:
+
+# Требуется пересборка контейнеров, так как settings.py был изменён
+docker compose stop && docker compose up --build 
+При старте сети к контейнерам backend и gateway подключился volume static. 
+Выполните команду сборки статики. После этого выполните команду копирования собранных файлов в /backend_static/static/ — перенесите файлы не в /backend_static/, а во вложенную папку: так адреса файлов для Nginx совпадут с адресами статических файлов, которые ожидает Django-проект.
+
+# Собрать статику Django
+docker compose exec backend python manage.py collectstatic
+# Статика приложения в контейнере backend 
+# будет собрана в директорию /app/collected_static/.
+
+# Теперь из этой директории копируем статику в /backend_static/static/;
+# эта статика попадёт на volume static в папку /static/:
+docker compose exec backend cp -r /app/collected_static/. /backend_static/static/ 
+Откройте в браузере страницу http://localhost:8000/admin/ и проверьте, что страница входа в админку отображается как следует:

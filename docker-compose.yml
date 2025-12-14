@@ -4,6 +4,8 @@
 # Перечень volume
 volumes:
   pg_data:
+  # Новый volume — для статических файлов
+  static:
 
 # Перечень контейнеров
 services:
@@ -22,6 +24,8 @@ services:
   backend: # Имя и описание контейнера с бэкендом
     env_file: .env
     build: ./backend/  # Из какого Dockerfile собирать образ для этого контейнера:
+    volumes:
+      - static:/backend_static
     depends_on: # Какие контейнеры нужно запустить до старта этого контейнера:
       db: 
         condition: service_healthy  # проверка здоровья контейнера с БД
@@ -39,3 +43,5 @@ services:
     # на порт 80 контейнера
     ports:
       - 8000:80 
+    volumes:
+      - static:/staticfiles
