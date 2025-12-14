@@ -1,5 +1,9 @@
 # Файл docker-compose.yml
+<<<<<<< HEAD
 # version: '3'
+=======
+version: '2.40.3'
+>>>>>>> 57032f808b9d979d77d56980c7c649c4e0b269fb
 
 # Перечень volume
 volumes:
