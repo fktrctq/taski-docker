@@ -223,3 +223,15 @@ docker run --env-file .env --net django-network --name taski_backend_container -
 
 Теперь, когда оба контейнера запущены и объединены в сеть, можно применить миграции Django. Откройте новое окно терминала и запустите команду выполнения миграций в контейнере бэкенда:
 docker exec taski_backend_container python manage.py migrate
+
+
+############################## NGINX #######################################################
+
+Dockerfile для образа nginx будет очень коротким: 
+В качестве базового слоя взять с Docker Hub готовый образ nginx:1.22.1.
+Скопировать в создаваемый образ конфиг-файл nginx.conf.
+Сервер Nginx ожидает найти файл с настройками по адресу /etc/nginx/templates/default.conf.template, вот туда его и скопируем из директории gateway/.
+
+FROM nginx:1.22.1
+COPY nginx.conf /etc/nginx/templates/default.conf.template 
+Именно так в документации и рекомендовано добавлять файл конфигурации в образ nginx.
