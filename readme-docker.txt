@@ -113,3 +113,78 @@ CMD ["python", "manage.py", "runserver", "0:8000"]
 
 docker volume create sqlite_data 
 
+# запуск с примотированием volume
+docker run --name taski_backend_container -p 8000:8000 -v sqlite_data:/data taski_backend
+
+
+# Создать образ (build); 
+# присвоить образу имя и тег (-t); 
+# Dockerfile взять в указанной директории.
+docker build -t username/taski_backend:latest backend/
+docker build -t username/taski_frontend:latest frontend/ 
+
+Загрузка образов на Docker Hub
+Прежде чем загружать образы на Docker Hub, нужно аутентифицировать там докер-демон. Выполните команду аутентификации:
+
+docker login
+# А можно сразу указать имя пользователя:
+docker login -u username 
+
+После авторизации можно запушить образы на Docker Hub:
+
+docker push username/taski_backend:latest
+docker push username/taski_frontend:latest 
+
+Чтобы изменить образ, загруженный на Docker Hub, нужно локально внести изменения в код проекта или докерфайл,
+ пересобрать образ и выполнить команду docker push <imagename>: образ обновится на Docker Hub.
+Пользователь, скачавший образ, может обновить его на локальном компьютере — для этого нужно выполнить команду docker pull <imagename>. 
+
+########################### POSTGRES ################################################
+Переменные окружения нужно указать при запуске контейнера; СУБД PostgreSQL при запуске будет ожидать переменные с определёнными названиями:
+POSTGRES_USER — имя пользователя,
+POSTGRES_PASSWORD — пароль пользователя,
+POSTGRES_DB — имя базы данных.
+
+POSTGRES_USER — имя пользователя БД (необязательная переменная, значение по умолчанию — postgres);
+POSTGRES_PASSWORD — пароль пользователя БД (обязательная переменная для создания БД в контейнере);
+POSTGRES_DB — название базы данных (необязательная переменная, по умолчанию совпадает с POSTGRES_USER).
+
+Переменные окружения можно передать при запуске контейнера, в параметрах команды docker run:
+
+docker run -e POSTGRES_PASSWORD=SecretPassword -e POSTGRES_USER=PostgresUser postgres:13.10
+
+Есть другой вариант: сохранить значения переменных в файл .env — и в параметрах команды docker run передать название этого файла. 
+
+# Старт контейнера с именем db, переменные окружения в .env, 
+# контейнер запустить из образа postgres:13.10
+# Эта команда – для демонстрации, запускать ее не надо
+docker run --name db --env-file .env postgres:13.10
+
+Docker volume для контейнера PostgreSQL
+Чтобы при удалении контейнера не потерять информацию, содержащуюся в базе данных, эту информацию следует хранить вне контейнера, в Docker volume на хосте.
+Создайте volume для хранения данных PostgreSQL:
+
+docker volume create pg_data 
+В образе PostgreSQL все данные хранятся в директории /var/lib/postgresql/data. Именно эту директорию нужно «перенаправить» на volume за пределами контейнера:
+
+# Старт контейнера ... связать volume pg_data 
+# c папкой в контейнере /var/lib/postgresql/data
+# Эта команда – для демонстрации, запускать ее не надо.
+docker run ... -v pg_data:/var/lib/postgresql/dat
+
+Адрес директории с данными не обязательно заучивать наизусть — он указан в README образа postgres.
+https://github.com/docker-library/docs/blob/master/postgres/README.md#pgdata
+
+Запускаем PostgreSQL в контейнере
+Всё готово, можно запускать контейнер. В итоге команда для запуска будет такой:
+
+# Символ \ в конце строки указывает терминалу, что команда
+# продолжится на следующей строке
+docker run --name db \
+       --env-file .env \
+       -v pg_data:/var/lib/postgresql/data \
+       postgres:13.10
+# Запустить контейнер с именем db, 
+# передать в контейнер переменные окружения из файла .env, 
+# подключить Docker volume с названием pg_data,
+# контейнер создать из образа postgres с тегом 13.10 
