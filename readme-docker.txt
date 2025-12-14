@@ -180,11 +180,30 @@ https://github.com/docker-library/docs/blob/master/postgres/README.md#pgdata
 
 # Символ \ в конце строки указывает терминалу, что команда
 # продолжится на следующей строке
-docker run --name db \
-       --env-file .env \
-       -v pg_data:/var/lib/postgresql/data \
-       postgres:13.10
+docker run --name db --env-file .env -v pg_data:/var/lib/postgresql/data postgres:13.10
 # Запустить контейнер с именем db, 
 # передать в контейнер переменные окружения из файла .env, 
 # подключить Docker volume с названием pg_data,
 # контейнер создать из образа postgres с тегом 13.10 
+
+
+В образе PostgreSQL есть консольный клиент psql, который позволяет отправлять SQL-запросы к базе данных из командной строки.
+Запустите его в отдельном терминале:
+
+docker exec -it db psql -U django_user -d django 
+exec — выполнить команду в запущенном контейнере;
+-it — запуск в интерактивном режиме;
+db — имя контейнера, в котором нужно выполнить команду;
+psql — имя утилиты, которую нужно запустить в контейнере;
+-U django_user — пользователь, от имени которого psql подключится к базе данных;
+-d django — имя базы данных, к которой нужно подключиться.
+
+При подключении к базе через psql не нужно указывать пароль пользователя django_user: 
+по умолчанию PostgreSQL доверяет подключениям с того же компьютера, на котором запущен сервер.
+А в нашем примере мы подключаемся к PostgreSQL из консоли psql, запущенной в том же контейнере (с точки зрения PostgreSQL — на том же компьютере).
+psql поддерживает не только SQL-команды, но и специальные команды PostgreSQL. Они начинаются с обратного слеша (\).
+Команды https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-META-COMMANDS
+
+Для работы с PostgreSQL в Django используется библиотека psycopg2-binary. Если её не установить, бэкенд postgresql не заработает.
+Добавьте в файл requirements.txt новый пакет psycopg2. Набор пакетов в requirements.txt должен выглядеть так:
+psycopg2-binary==2.9.3 
