@@ -207,3 +207,19 @@ psql поддерживает не только SQL-команды, но и сп
 Для работы с PostgreSQL в Django используется библиотека psycopg2-binary. Если её не установить, бэкенд postgresql не заработает.
 Добавьте в файл requirements.txt новый пакет psycopg2. Набор пакетов в requirements.txt должен выглядеть так:
 psycopg2-binary==2.9.3 
+
+Создадим сеть с именем django-network:
+
+docker network create django-network 
+Подключим к сети контейнеры бэкенда и базы данных.
+Контейнер db уже запущен, его можно сразу подключить к докер-сети. Выполните команду:
+
+# Присоединить к сети django-network контейнер db.
+docker network connect django-network db 
+
+Контейнер с бэкендом пока не запущен, подключим его к сети прямо при старте. Имя сети, к которой должен подключиться контейнер, указывается как параметр ключа --net.
+docker run --env-file .env --net django-network --name taski_backend_container -p 8000:8000 taski_backend
+
+
+Теперь, когда оба контейнера запущены и объединены в сеть, можно применить миграции Django. Откройте новое окно терминала и запустите команду выполнения миграций в контейнере бэкенда:
+docker exec taski_backend_container python manage.py migrate

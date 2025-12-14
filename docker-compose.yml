@@ -1,0 +1,31 @@
+# Файл docker-compose.yml
+# version: '3'
+
+# Перечень volume
+volumes:
+  pg_data:
+
+# Перечень контейнеров
+services:
+  # Имя и описание первого контейнера; имя выбирает разработчик. 
+  db: # Это контейнер БД
+    image: postgres:13.10 # Из какого образа запустить контейнер:
+    env_file: .env # Файл (или список файлов) с переменными окружения
+    volumes:  # Какой volume подключить для этого контейнера
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $POSTGRES_DB -U $POSTGRES_USER"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  
+  backend: # Имя и описание контейнера с бэкендом
+    env_file: .env
+    build: ./backend/  # Из какого Dockerfile собирать образ для этого контейнера:
+    depends_on: # Какие контейнеры нужно запустить до старта этого контейнера:
+      db: 
+        condition: service_healthy  # проверка здоровья контейнера с БД
+  
+  frontend: # Имя третьего контейнера. Это контейнер с фронтендом
+    env_file: .env
+    build: ./frontend/
